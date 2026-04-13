@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AttendaTrack — University Attendance Portal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f5f4f0;--bg3:#eeede8;
+  --text:#1a1a1a;--text2:#555;--text3:#888;
+  --border:#d0cfc8;--border2:#b0afa8;
+  --accent:#1a3a5c;--accent2:#e8f0f8;
+  --green:#1a5c2a;--green-bg:#e8f5ec;--green-border:#2a8a3a;
+  --red:#8b1a1a;--red-bg:#f8e8e8;--red-border:#cc4444;
+  --amber:#6b4a00;--amber-bg:#fdf3dc;--amber-border:#c8920a;
+  --card:#ffffff;--radius:10px;
+  --font:'Georgia',serif;
+  --font2:'Arial',sans-serif;
+}
+.dark{
+  --bg:#0f1117;--bg2:#181c24;--bg3:#1e2230;
+  --text:#e8e6e0;--text2:#a8a6a0;--text3:#6a6860;
+  --border:#2a2e3a;--border2:#3a3e4a;
+  --accent:#4a8ac4;--accent2:#1a2535;
+  --green:#4aaa5c;--green-bg:#0f2a14;--green-border:#3a8a4a;
+  --red:#cc5555;--red-bg:#2a0f0f;--red-border:#cc5555;
+  --amber:#d4aa44;--amber-bg:#2a200a;--amber-border:#c8920a;
+  --card:#181c24;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font2);transition:background .2s,color .2s}
+.wrap{max-width:480px;margin:0 auto;padding:16px 16px 60px}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 0 20px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;border:2px solid var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2}
+.logo-text{font-family:var(--font);font-size:17px;color:var(--text);letter-spacing:.3px}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-top:1px}
+.header-btns{display:flex;gap:8px;align-items:center}
+.toggle-btn{background:none;border:1px solid var(--border2);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--text2);font-size:13px;font-family:var(--font2);flex-shrink:0}
+.toggle-btn:hover{background:var(--bg2)}
+.user-chip{font-size:12px;color:var(--text3);padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* PAGE */
+.page{display:none}.page.active{display:block}
+.page-title{font-family:var(--font);font-size:22px;color:var(--text);margin-bottom:4px;font-weight:normal}
+.page-sub{font-size:13px;color:var(--text3);margin-bottom:20px;line-height:1.5}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;font-family:var(--font2);margin-bottom:16px;padding:0}
+.back-btn:hover{color:var(--text)}
+
+/* INPUTS */
+.input-group{margin-bottom:14px}
+.input-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:.2px}
+.input-field{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:7px;font-size:14px;background:var(--bg);color:var(--text);font-family:var(--font2);outline:none;transition:border-color .15s;-webkit-appearance:none}
+.input-field:focus{border-color:var(--accent)}
+select.input-field{cursor:pointer}
+
+/* BUTTONS */
+.btn{display:block;width:100%;padding:13px;border-radius:8px;border:none;cursor:pointer;font-size:15px;font-family:var(--font2);transition:opacity .15s,transform .1s;letter-spacing:.2px;text-align:center}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover:not(:disabled){opacity:.9}
+.btn-secondary{background:var(--bg2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover:not(:disabled){background:var(--bg3)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover:not(:disabled){opacity:.9}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover:not(:disabled){opacity:.9}
+.btn-sm{padding:8px 12px;font-size:13px}
+
+/* TABS */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;position:relative}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* CARDS */
+.info-card{background:var(--bg2);border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:3px solid var(--accent)}
+.info-card .i-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.info-card .i-val{font-size:15px;color:var(--text);font-family:var(--font)}
+.session-banner{background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;padding:14px 16px;margin-bottom:16px}
+.session-banner .s-title{color:var(--green);font-size:15px;font-family:var(--font);margin-bottom:3px}
+.session-banner .s-sub{font-size:12px;color:var(--text2)}
+.success-box{background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:28px 20px;text-align:center;margin-bottom:16px}
+.success-check{font-size:40px;margin-bottom:10px;display:block}
+.success-title{font-family:var(--font);font-size:20px;color:var(--green);margin-bottom:4px}
+.success-sub{font-size:13px;color:var(--text2)}
+.warn-box{background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:12px;padding:24px 20px;text-align:center;margin-bottom:16px}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--bg2);border-radius:8px;padding:12px 14px;text-align:center}
+.stat-num{font-size:26px;font-family:var(--font);color:var(--text);margin-bottom:2px}
+.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+
+/* STUDENT LIST */
+.student-list{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.student-item{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--card);gap:12px;animation:fadeIn .3s ease}
+.student-item:last-child{border-bottom:none}
+.student-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;border:1px solid var(--border)}
+.student-name{font-size:14px;color:var(--text);flex:1}
+.student-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.present-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+/* MISC */
+.divider{height:1px;background:var(--border);margin:20px 0}
+.section-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+.empty-state{text-align:center;padding:32px 16px;color:var(--text3);font-size:14px;background:var(--bg2);border-radius:8px}
+.empty-icon{font-size:28px;margin-bottom:8px;display:block}
+.live-badge{display:inline-flex;align-items:center;gap:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);border-radius:20px;padding:3px 10px;font-size:11px;margin-bottom:12px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.4s infinite}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:8px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:9999;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.timer-display{font-family:var(--font);font-size:32px;color:var(--accent);text-align:center;margin:8px 0 4px;letter-spacing:1px}
+.timer-label{text-align:center;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px}
+
+/* PIN & QR */
+.pin-display{font-family:var(--font);font-size:42px;letter-spacing:10px;color:var(--accent);text-align:center;background:var(--bg2);border-radius:8px;padding:18px;margin-bottom:6px;border:2px solid var(--accent)}
+.code-label{text-align:center;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px}
+.qr-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:16px}
+.qr-inner{display:inline-block;margin-bottom:8px;background:#fff;padding:6px;border-radius:4px}
+.qr-token-text{font-family:var(--font);font-size:20px;letter-spacing:4px;color:var(--accent);margin:4px 0}
+.qr-countdown{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* BADGE (for count on tab) */
+.count-badge{display:inline-block;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;vertical-align:middle;line-height:1.5}
+
+/* AUTH page specific */
+.auth-hint{font-size:12px;color:var(--text3);line-height:1.6;padding:12px 14px;background:var(--bg2);border-radius:8px;margin-bottom:14px;border-left:3px solid var(--accent)}
+
+/* Status badges */
+.badge-present{color:var(--green);font-weight:bold}
+.badge-late{color:var(--amber);font-weight:bold}
+.badge-absent{color:var(--red);font-weight:bold}
+
+/* Pending item */
+.pending-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.pending-name{font-size:15px;font-family:var(--font);color:var(--text);margin-bottom:2px}
+.pending-email{font-size:13px;color:var(--text2);margin-bottom:10px}
+.pending-actions{display:flex;gap:8px}
+
+/* History item */
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:8px}
+.hist-course{font-size:15px;font-family:var(--font);color:var(--text)}
+.hist-meta{font-size:12px;color:var(--text3);margin-top:3px}
+.hist-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+
+/* Session list card */
+.sess-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.sess-card:hover{border-color:var(--accent);background:var(--accent2)}
+.sess-course{font-size:15px;font-family:var(--font);color:var(--text);margin-bottom:4px}
+.sess-meta{font-size:12px;color:var(--text3)}
+
+/* Record card */
+.rec-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.rec-course{font-family:var(--font);font-size:16px;color:var(--text);margin-bottom:3px}
+.rec-meta{font-size:12px;color:var(--text3)}
+.rec-actions{display:flex;gap:8px;margin-top:10px}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="4" x2="8" y2="9"/><line x1="16" y1="4" x2="16" y2="9"/><line x1="7" y1="14" x2="11" y2="14"/><line x1="7" y1="17" x2="14" y2="17"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">AttendaTrack</div>
+        <div class="logo-sub">University Attendance Portal</div>
+      </div>
+    </div>
+    <div class="header-btns">
+      <button class="toggle-btn" onclick="toggleDark()" id="darkBtn">Dark</button>
+      <div class="user-chip" id="user-chip" style="display:none"></div>
+      <button class="toggle-btn" id="logout-btn" onclick="doLogout()" style="display:none">Sign out</button>
+    </div>
+  </div>
+
+  <!-- ========== AUTH PAGE ========== -->
+  <div class="page active" id="page-auth">
+    <div class="page-title">Welcome</div>
+    <div class="page-sub">Sign in or create an account to access the attendance portal.</div>
+    <div class="tab-bar">
+      <div class="tab active" id="auth-tab-login" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="tab" id="auth-tab-register" onclick="switchAuthTab('register')">Register</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="auth-login-form">
+      <div class="tab-bar" style="margin-bottom:16px">
+        <div class="tab active" id="login-tab-student" onclick="switchLoginType('student')">Student</div>
+        <div class="tab" id="login-tab-staff" onclick="switchLoginType('staff')">Lecturer / Admin</div>
+      </div>
+      <div id="login-student-fields">
+        <div class="input-group">
+          <label class="input-label">Matric Number</label>
+          <input class="input-field" id="login-matric" placeholder="e.g. CSC/2021/001">
+        </div>
+      </div>
+      <div id="login-staff-fields" style="display:none">
+        <div class="input-group">
+          <label class="input-label">Email Address</label>
+          <input class="input-field" id="login-email" placeholder="e.g. adeyemi@aaua.edu.ng" type="email">
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <input class="input-field" id="login-password" placeholder="Your password" type="password">
+      </div>
+      <button class="btn btn-primary" id="login-btn" onclick="handleLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--text3)">
+        No account? <span style="color:var(--accent);cursor:pointer" onclick="switchAuthTab('register')">Register here</span>
+      </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="auth-register-form" style="display:none">
+      <div class="tab-bar" style="margin-bottom:16px">
+        <div class="tab active" id="reg-tab-student" onclick="switchRegisterType('student')">Student</div>
+        <div class="tab" id="reg-tab-lecturer" onclick="switchRegisterType('lecturer')">Lecturer / Staff</div>
+      </div>
+
+      <div id="reg-student-fields">
+        <div class="input-group">
+          <label class="input-label">Full Name</label>
+          <input class="input-field" id="reg-s-name" placeholder="e.g. Chukwuemeka Obi">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Matric Number</label>
+          <input class="input-field" id="reg-s-matric" placeholder="e.g. CSC/2021/001">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input class="input-field" id="reg-s-pass" placeholder="Min. 6 characters" type="password">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Confirm Password</label>
+          <input class="input-field" id="reg-s-pass2" placeholder="Repeat password" type="password">
+        </div>
+        <button class="btn btn-primary" onclick="handleRegister('student')">Create Student Account</button>
+      </div>
+
+      <div id="reg-lecturer-fields" style="display:none">
+        <div class="auth-hint">
+          Staff with <strong>@aaua.edu.ng</strong> email are approved instantly. All other emails enter a pending queue for admin review.
+        </div>
+        <div class="input-group">
+          <label class="input-label">Full Name</label>
+          <input class="input-field" id="reg-l-name" placeholder="e.g. Dr. Adeyemi Oladele">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email Address</label>
+          <input class="input-field" id="reg-l-email" placeholder="e.g. adeyemi@aaua.edu.ng" type="email">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input class="input-field" id="reg-l-pass" placeholder="Min. 6 characters" type="password">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Confirm Password</label>
+          <input class="input-field" id="reg-l-pass2" placeholder="Repeat password" type="password">
+        </div>
+        <button class="btn btn-primary" onclick="handleRegister('lecturer')">Create Account</button>
+      </div>
+
+      <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--text3)">
+        Have an account? <span style="color:var(--accent);cursor:pointer" onclick="switchAuthTab('login')">Sign in</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== PENDING PAGE ========== -->
+  <div class="page" id="page-pending">
+    <div class="warn-box">
+      <span style="font-size:40px;display:block;margin-bottom:10px">⏳</span>
+      <div style="font-family:var(--font);font-size:20px;color:var(--amber);margin-bottom:6px">Awaiting Approval</div>
+      <div style="font-size:13px;color:var(--text2)">Your lecturer account is pending admin review. You will be able to log in once approved.</div>
+    </div>
+    <div class="info-card">
+      <div class="i-label">Registered Email</div>
+      <div class="i-val" id="pending-email">—</div>
+    </div>
+    <div class="info-card">
+      <div class="i-label">Status</div>
+      <div class="i-val" style="color:var(--amber)">Pending admin approval</div>
+    </div>
+    <button class="btn btn-secondary" onclick="doLogout()">Sign out</button>
+  </div>
+
+  <!-- ========== STUDENT PAGE ========== -->
+  <div class="page" id="page-student">
+    <div class="page-title" id="stu-greeting">Hello, Student</div>
+    <div class="page-sub" id="stu-matric-sub">Mark your attendance for active class sessions.</div>
+    <div class="tab-bar">
+      <div class="tab active" id="stu-tab-mark" onclick="switchStudentTab('mark')">Mark Attendance</div>
+      <div class="tab" id="stu-tab-history" onclick="switchStudentTab('history')">My History</div>
+    </div>
+
+    <!-- MARK ATTENDANCE CONTENT -->
+    <div id="stu-mark-content">
+      <!-- Step 1: find sessions -->
+      <div id="stu-find-form">
+        <button class="btn btn-primary" id="find-sessions-btn" onclick="loadActiveSessions()">Find Active Sessions</button>
+        <div id="stu-sessions-list" style="margin-top:14px"></div>
+      </div>
+
+      <!-- Step 2: verify -->
+      <div id="stu-verify-form" style="display:none">
+        <div class="session-banner">
+          <div class="s-title" id="stu-course-name"></div>
+          <div class="s-sub" id="stu-course-meta"></div>
+        </div>
+        <div class="info-card" id="stu-loc-card">
+          <div class="i-label">Location Verification</div>
+          <div class="i-val" id="stu-loc-val"><span class="spinner"></span>Detecting location...</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Session PIN — ask your lecturer for this 4-digit code</label>
+          <input class="input-field" id="stu-pin" placeholder="e.g. 4821" maxlength="4" inputmode="numeric" style="letter-spacing:8px;font-size:22px;text-align:center">
+        </div>
+        <div class="input-group" id="stu-qr-section" style="display:none">
+          <label class="input-label">QR Token — enter the 6-character code shown on lecturer's screen (optional but recommended)</label>
+          <input class="input-field" id="stu-qr-token" placeholder="e.g. A3BX9K" maxlength="6" style="letter-spacing:5px;text-align:center;text-transform:uppercase;font-size:18px">
+        </div>
+        <button class="btn btn-green" id="mark-btn" onclick="markAttendance()" style="margin-bottom:10px">Mark Attendance</button>
+        <button class="btn btn-secondary" onclick="cancelStudentVerify()">Cancel</button>
+      </div>
+
+      <!-- Step 3: success -->
+      <div id="stu-success" style="display:none">
+        <div class="success-box">
+          <span class="success-check">✓</span>
+          <div class="success-title">Attendance Recorded</div>
+          <div class="success-sub" id="stu-success-sub"></div>
+        </div>
+        <div class="info-card">
+          <div class="i-label">Course</div>
+          <div class="i-val" id="suc-course"></div>
+        </div>
+        <div class="info-card">
+          <div class="i-label">Attendance Status</div>
+          <div class="i-val" id="suc-status"></div>
+        </div>
+        <button class="btn btn-secondary" onclick="resetStudentMark()" style="margin-top:4px">Done</button>
+      </div>
+    </div>
+
+    <!-- HISTORY CONTENT -->
+    <div id="stu-history-content" style="display:none">
+      <div id="stu-history-list">
+        <div class="empty-state"><span class="spinner"></span>&nbsp; Loading history...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LECTURER PAGE ========== -->
+  <div class="page" id="page-lecturer">
+    <div class="page-title" id="lec-greeting">Lecturer Panel</div>
+    <div class="page-sub">Create sessions and monitor live attendance in real time.</div>
+    <div class="tab-bar">
+      <div class="tab active" id="tab-session" onclick="switchLecTab('session')">Session</div>
+      <div class="tab" id="tab-records" onclick="switchLecTab('records')">Records</div>
+    </div>
+
+    <!-- SESSION TAB -->
+    <div id="lec-session-content">
+      <!-- Setup form -->
+      <div id="lec-setup">
+        <div class="section-label">Open a new session</div>
+        <div class="input-group">
+          <label class="input-label">Course Title</label>
+          <input class="input-field" id="lec-course" placeholder="e.g. Computer Science 301 — Software Engineering">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Classroom / Venue</label>
+          <input class="input-field" id="lec-room" placeholder="e.g. Engineering Block — Hall A">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Geofence Radius (metres)</label>
+          <select class="input-field" id="lec-radius">
+            <option value="50">50 m — Small room</option>
+            <option value="100" selected>100 m — Standard lecture hall</option>
+            <option value="200">200 m — Large hall / outdoor</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Late Marking Window</label>
+          <select class="input-field" id="lec-late">
+            <option value="0">No late window — present only</option>
+            <option value="10" selected>10 minutes — mark as late after this</option>
+            <option value="15">15 minutes</option>
+            <option value="20">20 minutes</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="open-btn" onclick="openSession()">Open Attendance Session</button>
+      </div>
+
+      <!-- Active session view -->
+      <div id="lec-active" style="display:none">
+        <div class="live-badge"><span class="live-dot"></span> Session Live</div>
+        <div class="session-banner">
+          <div class="s-title" id="lec-active-course"></div>
+          <div class="s-sub" id="lec-active-meta"></div>
+        </div>
+        <div class="timer-display" id="session-timer">00:00</div>
+        <div class="timer-label">Session duration</div>
+
+        <!-- PIN display -->
+        <div style="margin-bottom:16px">
+          <div class="section-label">Session PIN — announce this to your class</div>
+          <div class="pin-display" id="lec-pin-display">——</div>
+          <div class="code-label">Students enter this 4-digit code to verify attendance</div>
+        </div>
+
+        <!-- QR code display -->
+        <div class="qr-box" style="margin-bottom:16px">
+          <div class="section-label" style="margin-bottom:10px">QR Code — rotates every 60 seconds</div>
+          <div class="qr-inner" id="lec-qr-code"></div>
+          <div class="qr-token-text" id="lec-qr-token-text">——</div>
+          <div class="qr-countdown" id="lec-qr-countdown">Refreshes in 60s</div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-present">0</div>
+            <div class="stat-label">Present</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-late">0</div>
+            <div class="stat-label">Late</div>
+          </div>
+        </div>
+
+        <div class="section-label">Students in attendance</div>
+        <div class="empty-state" id="lec-empty">
+          <span class="empty-icon">📋</span>
+          Waiting for students to mark attendance...
+        </div>
+        <div class="student-list" id="lec-student-list" style="display:none"></div>
+
+        <div style="margin-top:16px">
+          <button class="btn btn-danger" onclick="closeSession()">Close Session</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECORDS TAB -->
+    <div id="lec-records-content" style="display:none">
+      <div class="empty-state" id="rec-empty">
+        <span class="empty-icon">📂</span>
+        No session records yet. Close a session to save records here.
+      </div>
+      <div id="rec-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== ADMIN PAGE ========== -->
+  <div class="page" id="page-admin">
+    <div class="page-title">Admin Panel</div>
+    <div class="page-sub" id="admin-email-sub">Institution management dashboard.</div>
+    <div class="tab-bar">
+      <div class="tab active" id="adm-tab-pending" onclick="switchAdminTab('pending')">Pending <span class="count-badge" id="adm-pending-count" style="display:none">0</span></div>
+      <div class="tab" id="adm-tab-lecturers" onclick="switchAdminTab('lecturers')">Lecturers</div>
+      <div class="tab" id="adm-tab-sessions" onclick="switchAdminTab('sessions')">Live Sessions</div>
+    </div>
+
+    <div id="adm-pending-content">
+      <div class="empty-state" id="adm-pending-empty">
+        <span class="empty-icon">✅</span>
+        No pending approvals right now.
+      </div>
+      <div id="adm-pending-list"></div>
+    </div>
+
+    <div id="adm-lecturers-content" style="display:none">
+      <div class="empty-state" id="adm-lecturers-empty">
+        <span class="empty-icon">👤</span>
+        No approved lecturers yet.
+      </div>
+      <div id="adm-lecturers-list"></div>
+    </div>
+
+    <div id="adm-sessions-content" style="display:none">
+      <div class="empty-state" id="adm-sessions-empty">
+        <span class="empty-icon">📡</span>
+        No active sessions right now.
+      </div>
+      <div id="adm-sessions-list"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, get, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
+// NOTE TO USER: Replace this config if you're using a different Firebase project.
+// In your Firebase console, make sure to enable "Email/Password" sign-in under
+// Authentication → Sign-in method.
+const firebaseConfig = {
+  apiKey: "AIzaSyB2D5CH0c38bOUHUcSlwea2-k64bxE5keY",
+  authDomain: "attendance-system-demo-dbaf0.firebaseapp.com",
+  databaseURL: "https://attendance-system-demo-dbaf0-default-rtdb.firebaseio.com",
+  projectId: "attendance-system-demo-dbaf0",
+  storageBucket: "attendance-system-demo-dbaf0.firebasestorage.app",
+  messagingSenderId: "102587666436",
+  appId: "1:102587666436:web:0f85dd9a54ec742e762551"
+};
+
+/*
+─── FIREBASE DATABASE RULES ────────────────────────────────────────────────────
+Paste these rules into Firebase Console → Realtime Database → Rules:
+
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
+    },
+    "activeSessions": {
+      ".read": "auth != null",
+      "$lecturerId": {
+        ".write": "auth != null && auth.uid === $lecturerId",
+        "students": {
+          "$matricKey": {
+            ".write": "auth != null && !data.exists()"
+          }
+        }
+      }
+    },
+    "sessionHistory": {
+      "$lecturerId": {
+        ".read": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && auth.uid === $lecturerId"
+      }
+    }
+  }
+}
+
+The !data.exists() rule on students/$matricKey prevents any student from
+submitting twice for the same session, enforced at the database level.
+─────────────────────────────────────────────────────────────────────────────────
+*/
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const ADMIN_EMAILS = ['alajogunayomiposi@gmail.com', 'ayomiposialajogun@gmail.com'];
+const ADMIN_DOMAIN = 'apexhub.info';
+const AUTO_LEC_DOMAIN = 'aaua.edu.ng';
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let dark = false;
+let currentUser = null;
+let currentUserData = null;
+let sessionStart = null;
+let timerInterval = null;
+let qrCountInterval = null;
+let qrTimeLeft = 60;
+let unsubListeners = [];
+let loginType = 'student';
+let regType = 'student';
+let selectedLecId = null;   // for student: which session they're joining
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function isAdminEmail(e) {
+  if (!e) return false;
+  const em = e.toLowerCase();
+  return ADMIN_EMAILS.includes(em) || em.endsWith('@' + ADMIN_DOMAIN);
+}
+function isAutoLec(e) { return e.toLowerCase().endsWith('@' + AUTO_LEC_DOMAIN); }
+function matricToEmail(m) { return m.replace(/[^a-z0-9]/gi,'').toLowerCase() + '@stu.attendatrack.app'; }
+function matricToKey(m) { return m.replace(/[^a-z0-9]/gi,'_').toLowerCase(); }
+function genPin() { return String(Math.floor(1000 + Math.random() * 9000)); }
+function genToken() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+function deviceFp() {
+  try { return btoa((navigator.userAgent + '|' + screen.width + 'x' + screen.height).substring(0,120)); }
+  catch(e) { return 'unknown'; }
+}
+
+function toast(msg, ms = 2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const show = id !== 'auth';
+  document.getElementById('logout-btn').style.display = show ? 'block' : 'none';
+  document.getElementById('user-chip').style.display = show ? 'block' : 'none';
+}
+function clearListeners() { unsubListeners.forEach(f => f()); unsubListeners = []; }
+function clearTimers() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (qrCountInterval) { clearInterval(qrCountInterval); qrCountInterval = null; }
+}
+
+// ─── AUTH STATE ───────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { showPage('auth'); return; }
+  currentUser = user;
+  try {
+    const snap = await get(ref(db, 'users/' + user.uid));
+    if (!snap.exists()) { await signOut(auth); toast('Account error. Please register.'); return; }
+    currentUserData = snap.val();
+    routeUser();
+  } catch(e) { toast('Error loading account.'); await signOut(auth); }
+});
+
+function routeUser() {
+  const d = currentUserData;
+  const chip = document.getElementById('user-chip');
+  chip.textContent = d.name || d.email || 'User';
+  if (d.role === 'admin') {
+    document.getElementById('admin-email-sub').textContent = 'Signed in as ' + currentUser.email;
+    showPage('admin');
+    loadAdminData();
+  } else if (d.role === 'lecturer') {
+    if (d.status === 'pending') {
+      document.getElementById('pending-email').textContent = currentUser.email;
+      showPage('pending');
+    } else if (d.status === 'rejected') {
+      toast('Your account was rejected. Contact the admin.', 4000);
+      signOut(auth);
+    } else {
+      document.getElementById('lec-greeting').textContent = 'Hello, ' + d.name;
+      showPage('lecturer');
+      loadLecturerRecords();
+    }
+  } else if (d.role === 'student') {
+    document.getElementById('stu-greeting').textContent = 'Hello, ' + d.name;
+    document.getElementById('stu-matric-sub').textContent = 'Matric: ' + d.matric + ' · Mark attendance for your classes.';
+    showPage('student');
+  }
+}
+
+window.doLogout = async function() {
+  clearListeners();
+  clearTimers();
+  await signOut(auth);
+  currentUser = null; currentUserData = null;
+  // Reset UI
+  document.getElementById('stu-find-form').style.display = 'block';
+  document.getElementById('stu-verify-form').style.display = 'none';
+  document.getElementById('stu-success').style.display = 'none';
+  document.getElementById('lec-setup').style.display = 'block';
+  document.getElementById('lec-active').style.display = 'none';
+  showPage('auth');
+};
+
+window.toggleDark = function() {
+  dark = !dark;
+  document.body.classList.toggle('dark', dark);
+  document.getElementById('darkBtn').textContent = dark ? 'Light' : 'Dark';
+};
+
+// ─── AUTH FORMS ───────────────────────────────────────────────────────────────
+window.switchAuthTab = function(tab) {
+  document.getElementById('auth-tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('auth-tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('auth-login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('auth-register-form').style.display = tab==='register' ? 'block' : 'none';
+};
+window.switchLoginType = function(t) {
+  loginType = t;
+  document.getElementById('login-tab-student').classList.toggle('active', t==='student');
+  document.getElementById('login-tab-staff').classList.toggle('active', t==='staff');
+  document.getElementById('login-student-fields').style.display = t==='student' ? 'block' : 'none';
+  document.getElementById('login-staff-fields').style.display = t==='staff' ? 'block' : 'none';
+};
+window.switchRegisterType = function(t) {
+  regType = t;
+  document.getElementById('reg-tab-student').classList.toggle('active', t==='student');
+  document.getElementById('reg-tab-lecturer').classList.toggle('active', t==='lecturer');
+  document.getElementById('reg-student-fields').style.display = t==='student' ? 'block' : 'none';
+  document.getElementById('reg-lecturer-fields').style.display = t==='lecturer' ? 'block' : 'none';
+};
+
+window.handleLogin = async function() {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    let email, password;
+    if (loginType === 'student') {
+      const matric = document.getElementById('login-matric').value.trim();
+      password = document.getElementById('login-password').value;
+      if (!matric || !password) { toast('Please fill in all fields'); return; }
+      email = matricToEmail(matric);
+    } else {
+      email = document.getElementById('login-email').value.trim();
+      password = document.getElementById('login-password').value;
+      if (!email || !password) { toast('Please fill in all fields'); return; }
+    }
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch(e) {
+    const msg = (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+      ? 'Incorrect credentials. Please check and try again.'
+      : e.message;
+    toast(msg);
+  } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
+};
+
+window.handleRegister = async function(type) {
+  try {
+    let email, password, name, matric, role, status;
+    if (type === 'student') {
+      name = document.getElementById('reg-s-name').value.trim();
+      matric = document.getElementById('reg-s-matric').value.trim();
+      const p1 = document.getElementById('reg-s-pass').value;
+      const p2 = document.getElementById('reg-s-pass2').value;
+      if (!name || !matric || !p1) { toast('Please fill in all fields'); return; }
+      if (p1 !== p2) { toast('Passwords do not match'); return; }
+      if (p1.length < 6) { toast('Password must be at least 6 characters'); return; }
+      email = matricToEmail(matric); password = p1; role = 'student'; status = 'approved';
+    } else {
+      name = document.getElementById('reg-l-name').value.trim();
+      email = document.getElementById('reg-l-email').value.trim();
+      const p1 = document.getElementById('reg-l-pass').value;
+      const p2 = document.getElementById('reg-l-pass2').value;
+      if (!name || !email || !p1) { toast('Please fill in all fields'); return; }
+      if (p1 !== p2) { toast('Passwords do not match'); return; }
+      if (p1.length < 6) { toast('Password must be at least 6 characters'); return; }
+      password = p1;
+      if (isAdminEmail(email)) { role = 'admin'; status = 'approved'; }
+      else { role = 'lecturer'; status = isAutoLec(email) ? 'approved' : 'pending'; }
+    }
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await set(ref(db, 'users/' + cred.user.uid), {
+      name, role, status,
+      email: type === 'student' ? null : email,
+      matric: type === 'student' ? matric : null,
+      registeredAt: Date.now()
+    });
+    toast('Account created!');
+    // onAuthStateChanged fires and routes automatically
+  } catch(e) {
+    const msg = e.code === 'auth/email-already-in-use'
+      ? 'This account already exists. Please sign in.'
+      : e.message;
+    toast(msg);
+  }
+};
+
+// ─── STUDENT FUNCTIONS ────────────────────────────────────────────────────────
+window.switchStudentTab = function(t) {
+  document.getElementById('stu-tab-mark').classList.toggle('active', t==='mark');
+  document.getElementById('stu-tab-history').classList.toggle('active', t==='history');
+  document.getElementById('stu-mark-content').style.display = t==='mark' ? 'block' : 'none';
+  document.getElementById('stu-history-content').style.display = t==='history' ? 'block' : 'none';
+  if (t === 'history') loadStudentHistory();
+};
+
+window.loadActiveSessions = async function() {
+  const btn = document.getElementById('find-sessions-btn');
+  const list = document.getElementById('stu-sessions-list');
+  btn.disabled = true; btn.textContent = 'Searching...';
+  list.innerHTML = '';
+  try {
+    const snap = await get(ref(db, 'activeSessions'));
+    const sessions = snap.val() || {};
+    const active = Object.entries(sessions).filter(([k, v]) => v && v.active);
+    if (active.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span class="empty-icon">📡</span>No active sessions found. Ask your lecturer to open a session first.</div>';
+    } else {
+      list.innerHTML = active.map(([lecId, sess]) => {
+        const lateInfo = sess.lateWindowMinutes > 0 ? `${sess.lateWindowMinutes}min late window` : 'no late window';
+        return `<div class="sess-card" onclick="selectSession('${lecId}')">
+          <div class="sess-course">${sess.course}</div>
+          <div class="sess-meta">${sess.lecturer} · ${sess.room} · ${sess.radius}m geofence · ${lateInfo}</div>
+          <div style="font-size:12px;color:var(--accent);margin-top:6px">Tap to join →</div>
+        </div>`;
+      }).join('');
+    }
+  } catch(e) { toast('Connection error. Try again.'); }
+  finally { btn.disabled = false; btn.textContent = 'Refresh Sessions'; }
+};
+
+window.selectSession = async function(lecId) {
+  selectedLecId = lecId;
+  try {
+    const snap = await get(ref(db, 'activeSessions/' + lecId));
+    const sess = snap.val();
+    if (!sess || !sess.active) { toast('Session is no longer active.'); loadActiveSessions(); return; }
+    // Duplicate check (client side)
+    const mk = matricToKey(currentUserData.matric);
+    if (sess.students && sess.students[mk]) {
+      toast('You have already marked attendance for this session.'); return;
+    }
+    document.getElementById('stu-course-name').textContent = sess.course;
+    document.getElementById('stu-course-meta').textContent = 'By ' + sess.lecturer + ' · ' + sess.room;
+    document.getElementById('stu-find-form').style.display = 'none';
+    document.getElementById('stu-verify-form').style.display = 'block';
+    document.getElementById('stu-pin').value = '';
+    document.getElementById('stu-qr-token').value = '';
+    document.getElementById('stu-qr-section').style.display = sess.qrToken ? 'block' : 'none';
+    verifyLocation(sess.radius);
+  } catch(e) { toast('Error loading session.'); }
+};
+
+function verifyLocation(radius) {
+  const locVal = document.getElementById('stu-loc-val');
+  const locCard = document.getElementById('stu-loc-card');
+  if (!navigator.geolocation) {
+    locVal.textContent = 'Geolocation not supported — demo mode active';
+    locCard.style.borderLeftColor = 'var(--amber)'; return;
+  }
+  locVal.innerHTML = '<span class="spinner"></span>Detecting location...';
+  locCard.style.borderLeftColor = 'var(--accent)';
+  navigator.geolocation.getCurrentPosition(
+    () => {
+      locVal.innerHTML = '✓ Location confirmed — within ' + radius + 'm geofence';
+      locCard.style.borderLeftColor = 'var(--green)';
+    },
+    () => {
+      locVal.textContent = 'Location unavailable — proceeding with PIN verification';
+      locCard.style.borderLeftColor = 'var(--amber)';
+    },
+    { timeout: 8000 }
+  );
+}
+
+window.markAttendance = async function() {
+  const btn = document.getElementById('mark-btn');
+  const pin = document.getElementById('stu-pin').value.trim();
+  const qrInput = document.getElementById('stu-qr-token').value.trim().toUpperCase();
+  if (!pin || pin.length !== 4) { toast('Please enter the 4-digit PIN from your lecturer'); return; }
+  btn.disabled = true; btn.textContent = 'Verifying...';
+  try {
+    const snap = await get(ref(db, 'activeSessions/' + selectedLecId));
+    const sess = snap.val();
+    if (!sess || !sess.active) { toast('This session has been closed.'); cancelStudentVerify(); return; }
+    if (sess.pin !== pin) {
+      toast('Incorrect PIN. Check with your lecturer.'); btn.disabled = false; btn.textContent = 'Mark Attendance'; return;
+    }
+    if (qrInput && sess.qrToken && qrInput !== sess.qrToken) {
+      toast('Invalid QR token — check the code on your lecturer\'s screen.'); btn.disabled = false; btn.textContent = 'Mark Attendance'; return;
+    }
+    // Determine present vs late
+    const elapsed = (Date.now() - sess.openedAt) / 60000;
+    const lateWin = sess.lateWindowMinutes || 0;
+    const status = (lateWin > 0 && elapsed > lateWin) ? 'late' : 'present';
+    // Verification method
+    let method = 'geolocation+pin';
+    if (qrInput && sess.qrToken && qrInput === sess.qrToken) method = 'geolocation+pin+qr';
+    const mk = matricToKey(currentUserData.matric);
+    // set() to fixed key — Firebase rules block duplicate (data.exists())
+    await set(ref(db, 'activeSessions/' + selectedLecId + '/students/' + mk), {
+      name: currentUserData.name,
+      matric: currentUserData.matric,
+      timestamp: Date.now(),
+      status,
+      method,
+      fp: deviceFp()
+    });
+    document.getElementById('stu-verify-form').style.display = 'none';
+    document.getElementById('stu-success').style.display = 'block';
+    document.getElementById('stu-success-sub').textContent = 'Recorded at ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('suc-course').textContent = sess.course;
+    document.getElementById('suc-status').textContent = status === 'late' ? '⏰ Marked as Late' : '✓ Present';
+    toast('Attendance marked!');
+  } catch(e) {
+    if (String(e).includes('PERMISSION_DENIED')) {
+      toast('Already marked for this session.');
+    } else {
+      toast('Error recording attendance. Try again.');
+    }
+    btn.disabled = false; btn.textContent = 'Mark Attendance';
+  }
+};
+
+window.cancelStudentVerify = function() {
+  document.getElementById('stu-find-form').style.display = 'block';
+  document.getElementById('stu-verify-form').style.display = 'none';
+  selectedLecId = null;
+};
+window.resetStudentMark = function() {
+  document.getElementById('stu-success').style.display = 'none';
+  document.getElementById('stu-find-form').style.display = 'block';
+  document.getElementById('stu-sessions-list').innerHTML = '';
+  document.getElementById('find-sessions-btn').textContent = 'Find Active Sessions';
+  selectedLecId = null;
+};
+
+async function loadStudentHistory() {
+  const listEl = document.getElementById('stu-history-list');
+  listEl.innerHTML = '<div class="empty-state"><span class="spinner"></span>&nbsp; Loading...</div>';
+  try {
+    const snap = await get(ref(db, 'sessionHistory'));
+    const all = snap.val() || {};
+    const mk = matricToKey(currentUserData.matric);
+    // Collect per-course stats and records
+    const records = [];
+    const courseTotal = {}, courseAttended = {};
+    Object.values(all).forEach(lecSessions => {
+      if (!lecSessions) return;
+      Object.values(lecSessions).forEach(sess => {
+        if (!sess || !sess.course) return;
+        const c = sess.course;
+        if (!courseTotal[c]) { courseTotal[c] = 0; courseAttended[c] = 0; }
+        courseTotal[c]++;
+        const stuRec = sess.students && sess.students[mk];
+        if (stuRec) { courseAttended[c]++; records.push({ ...stuRec, course: c, openedAt: sess.openedAt, lecturer: sess.lecturer }); }
+      });
+    });
+    records.sort((a, b) => b.openedAt - a.openedAt);
+    if (records.length === 0) {
+      listEl.innerHTML = '<div class="empty-state"><span class="empty-icon">📋</span>No attendance records yet. Mark your first session!</div>';
+      return;
+    }
+    listEl.innerHTML = records.map(r => {
+      const pct = courseTotal[r.course] ? Math.round((courseAttended[r.course] / courseTotal[r.course]) * 100) : 0;
+      const d = new Date(r.openedAt);
+      const statusColor = r.status === 'late' ? 'var(--amber)' : 'var(--green)';
+      const pctColor = pct < 75 ? 'var(--red)' : pct < 85 ? 'var(--amber)' : 'var(--green)';
+      return `<div class="hist-item">
+        <div class="hist-course">${r.course}</div>
+        <div class="hist-meta">${d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} · ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${r.method || 'geolocation+pin'}</div>
+        <div class="hist-row">
+          <span style="font-size:12px;font-weight:600;color:${statusColor}">${r.status === 'late' ? '⏰ Late' : '✓ Present'}</span>
+          <span style="font-size:12px;color:${pctColor};font-weight:600">${pct}% course attendance</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { listEl.innerHTML = '<div class="empty-state">Error loading history.</div>'; }
+}
+
+// ─── LECTURER FUNCTIONS ───────────────────────────────────────────────────────
+window.switchLecTab = function(t) {
+  document.getElementById('tab-session').classList.toggle('active', t==='session');
+  document.getElementById('tab-records').classList.toggle('active', t==='records');
+  document.getElementById('lec-session-content').style.display = t==='session' ? 'block' : 'none';
+  document.getElementById('lec-records-content').style.display = t==='records' ? 'block' : 'none';
+  if (t === 'records') loadLecturerRecords();
+};
+
+window.openSession = async function() {
+  const course = document.getElementById('lec-course').value.trim();
+  const room = document.getElementById('lec-room').value.trim();
+  const radius = parseInt(document.getElementById('lec-radius').value);
+  const lateWin = parseInt(document.getElementById('lec-late').value);
+  if (!course || !room) { toast('Please fill in course title and venue'); return; }
+  const btn = document.getElementById('open-btn');
+  btn.disabled = true; btn.textContent = 'Opening...';
+  const pin = genPin();
+  const qrToken = genToken();
+  try {
+    await set(ref(db, 'activeSessions/' + currentUser.uid), {
+      course, lecturer: currentUserData.name, lecturerId: currentUser.uid,
+      room, radius, lateWindowMinutes: lateWin,
+      openedAt: Date.now(), active: true,
+      pin, qrToken, qrRotatedAt: Date.now(), students: {}
+    });
+    sessionStart = new Date();
+    document.getElementById('lec-setup').style.display = 'none';
+    document.getElementById('lec-active').style.display = 'block';
+    document.getElementById('lec-active-course').textContent = course;
+    document.getElementById('lec-active-meta').textContent = currentUserData.name + ' · ' + room + ' · ' + radius + 'm' + (lateWin > 0 ? ' · ' + lateWin + 'min late window' : '');
+    document.getElementById('lec-pin-display').textContent = pin;
+    generateQr(qrToken);
+    document.getElementById('lec-qr-token-text').textContent = qrToken;
+    timerInterval = setInterval(updateTimer, 1000);
+    startQrRotation();
+    listenToStudents();
+    toast('Session is now live');
+  } catch(e) {
+    toast('Error opening session. Check connection.');
+    btn.disabled = false; btn.textContent = 'Open Attendance Session';
+  }
+};
+
+function generateQr(token) {
+  const el = document.getElementById('lec-qr-code');
+  el.innerHTML = '';
+  try {
+    new QRCode(el, {
+      text: 'ATTEND:' + token,
+      width: 150, height: 150,
+      colorDark: dark ? '#e8e6e0' : '#1a1a1a',
+      colorLight: dark ? '#181c24' : '#ffffff'
+    });
+  } catch(e) { el.textContent = token; }
+}
+
+function startQrRotation() {
+  qrTimeLeft = 60;
+  qrCountInterval = setInterval(async () => {
+    qrTimeLeft--;
+    const el = document.getElementById('lec-qr-countdown');
+    if (el) el.textContent = 'Refreshes in ' + qrTimeLeft + 's';
+    if (qrTimeLeft <= 0) {
+      qrTimeLeft = 60;
+      const newToken = genToken();
+      try {
+        await update(ref(db, 'activeSessions/' + currentUser.uid), { qrToken: newToken, qrRotatedAt: Date.now() });
+        const tEl = document.getElementById('lec-qr-token-text');
+        if (tEl) tEl.textContent = newToken;
+        generateQr(newToken);
+      } catch(e) {}
+    }
+  }, 1000);
+}
+
+function listenToStudents() {
+  const studRef = ref(db, 'activeSessions/' + currentUser.uid + '/students');
+  const unsub = onValue(studRef, snap => {
+    const data = snap.val() || {};
+    const students = Object.values(data);
+    const presentCount = students.filter(s => s.status !== 'late').length;
+    const lateCount = students.filter(s => s.status === 'late').length;
+    document.getElementById('stat-present').textContent = presentCount;
+    document.getElementById('stat-late').textContent = lateCount;
+    const empty = document.getElementById('lec-empty');
+    const list = document.getElementById('lec-student-list');
+    if (students.length === 0) {
+      empty.style.display = 'block'; list.style.display = 'none';
+    } else {
+      empty.style.display = 'none'; list.style.display = 'block';
+      list.innerHTML = students.sort((a,b) => a.timestamp - b.timestamp).map(s => {
+        const init = s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const t = new Date(s.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const col = s.status === 'late' ? 'var(--amber)' : 'var(--green)';
+        return `<div class="student-item">
+          <div class="student-avatar">${init}</div>
+          <div style="flex:1">
+            <div class="student-name">${s.name}</div>
+            <div class="student-meta">${s.matric} · ${t} · <span style="color:${col}">${s.status || 'present'}</span></div>
+          </div>
+          <span class="present-dot" style="background:${col}"></span>
+        </div>`;
+      }).join('');
+    }
+  });
+  unsubListeners.push(unsub);
+}
+
+function updateTimer() {
+  if (!sessionStart) return;
+  const sec = Math.floor((new Date() - sessionStart) / 1000);
+  const m = Math.floor(sec/60), s = sec % 60;
+  const el = document.getElementById('session-timer');
+  if (el) el.textContent = (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+}
+
+window.closeSession = async function() {
+  if (!confirm('Close this session? Students will no longer be able to mark attendance.')) return;
+  clearTimers();
+  clearListeners();
+  try {
+    const snap = await get(ref(db, 'activeSessions/' + currentUser.uid));
+    const data = snap.val();
+    if (data) {
+      const histKey = 'sess_' + data.openedAt;
+      await set(ref(db, 'sessionHistory/' + currentUser.uid + '/' + histKey), {
+        ...data, closedAt: Date.now(), active: false
+      });
+    }
+    await remove(ref(db, 'activeSessions/' + currentUser.uid));
+    toast('Session closed and saved to records.');
+    document.getElementById('lec-active').style.display = 'none';
+    document.getElementById('lec-setup').style.display = 'block';
+    document.getElementById('open-btn').disabled = false;
+    document.getElementById('open-btn').textContent = 'Open Attendance Session';
+    document.getElementById('lec-course').value = '';
+    document.getElementById('lec-room').value = '';
+    document.getElementById('lec-qr-code').innerHTML = '';
+    sessionStart = null;
+    loadLecturerRecords();
+  } catch(e) { toast('Error closing session.'); }
+};
+
+async function loadLecturerRecords() {
+  const listEl = document.getElementById('rec-list');
+  const emptyEl = document.getElementById('rec-empty');
+  listEl.innerHTML = '';
+  try {
+    const snap = await get(ref(db, 'sessionHistory/' + currentUser.uid));
+    const history = snap.val() || {};
+    const sessions = Object.entries(history).sort((a,b) => b[1].openedAt - a[1].openedAt);
+    if (sessions.length === 0) { emptyEl.style.display = 'block'; return; }
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = sessions.map(([key, sess]) => {
+      const students = Object.values(sess.students || {});
+      const present = students.filter(s => s.status !== 'late').length;
+      const late = students.filter(s => s.status === 'late').length;
+      const dur = Math.floor(((sess.closedAt || Date.now()) - sess.openedAt) / 60000);
+      const d = new Date(sess.openedAt);
+      const dateStr = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      const timeStr = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      return `<div class="rec-card">
+        <div class="rec-meta">${dateStr} · ${timeStr} · ${dur} min · ${sess.room}</div>
+        <div class="rec-course">${sess.course}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px">${present} present · ${late} late · ${students.length} total</div>
+        <div class="rec-actions">
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="exportPDF('${key}')">📄 PDF Report</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="exportExcel('${key}')">📊 Excel</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { listEl.innerHTML = '<div class="empty-state">Error loading records.</div>'; }
+}
+
+window.exportPDF = async function(sessKey) {
+  if (!window.jspdf) { toast('PDF library not loaded. Check your internet connection.'); return; }
+  try {
+    const snap = await get(ref(db, 'sessionHistory/' + currentUser.uid + '/' + sessKey));
+    const sess = snap.val();
+    if (!sess) { toast('Session data not found.'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const students = Object.values(sess.students || {});
+    const dateStr = new Date(sess.openedAt).toLocaleString('en-GB');
+    const dur = Math.floor(((sess.closedAt || Date.now()) - sess.openedAt) / 60000);
+    // Header
+    doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('AttendaTrack — Attendance Report', 14, 18);
+    doc.setDrawColor(26,58,92); doc.setLineWidth(0.5); doc.line(14, 21, 196, 21);
+    doc.setFontSize(10); doc.setFont(undefined,'normal');
+    doc.text('Course:   ' + sess.course, 14, 29);
+    doc.text('Lecturer: ' + sess.lecturer, 14, 36);
+    doc.text('Venue:    ' + sess.room, 14, 43);
+    doc.text('Date:     ' + dateStr, 14, 50);
+    doc.text('Duration: ' + dur + ' minutes', 14, 57);
+    doc.text('Total:    ' + students.length + ' student(s) recorded', 14, 64);
+    // Table header
+    let y = 76;
+    doc.setFont(undefined,'bold'); doc.setFontSize(9);
+    doc.text('#', 14, y); doc.text('Name', 22, y); doc.text('Matric No.', 90, y);
+    doc.text('Status', 138, y); doc.text('Time In', 160, y); doc.text('Method', 178, y);
+    doc.setDrawColor(180,180,180); doc.line(14, y+2, 196, y+2);
+    doc.setFont(undefined,'normal'); y += 8;
+    students.forEach((s, i) => {
+      if (y > 272) { doc.addPage(); y = 20; }
+      const t = new Date(s.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      doc.text(String(i+1), 14, y);
+      doc.text(s.name.substring(0,32), 22, y);
+      doc.text((s.matric||'').substring(0,20), 90, y);
+      doc.text(s.status || 'present', 138, y);
+      doc.text(t, 160, y);
+      doc.text((s.method||'geolocation+pin').substring(0,18), 178, y);
+      y += 7;
+    });
+    doc.line(14, y+2, 196, y+2);
+    doc.setFontSize(8); doc.setTextColor(120);
+    doc.text('Generated by AttendaTrack · ' + new Date().toLocaleString('en-GB'), 14, y+8);
+    const fname = 'attendance_' + sess.course.replace(/\s+/g,'_').substring(0,30) + '_' + new Date(sess.openedAt).toISOString().split('T')[0] + '.pdf';
+    doc.save(fname);
+    toast('PDF downloaded');
+  } catch(e) { toast('PDF error: ' + e.message); }
+};
+
+window.exportExcel = async function(sessKey) {
+  if (!window.XLSX) { toast('Excel library not loaded. Check your internet connection.'); return; }
+  try {
+    const snap = await get(ref(db, 'sessionHistory/' + currentUser.uid + '/' + sessKey));
+    const sess = snap.val();
+    if (!sess) { toast('Session data not found.'); return; }
+    const students = Object.values(sess.students || {});
+    const rows = students.map((s, i) => ({
+      '#': i + 1,
+      'Name': s.name,
+      'Matric Number': s.matric,
+      'Status': s.status || 'present',
+      'Time In': new Date(s.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      'Verification Method': s.method || 'geolocation+pin',
+      'Course': sess.course,
+      'Date': new Date(sess.openedAt).toLocaleDateString('en-GB'),
+      'Venue': sess.room,
+      'Lecturer': sess.lecturer
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:4},{wch:28},{wch:18},{wch:10},{wch:10},{wch:22},{wch:36},{wch:14},{wch:26},{wch:24}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+    const fname = 'attendance_' + sess.course.replace(/\s+/g,'_').substring(0,30) + '.xlsx';
+    XLSX.writeFile(wb, fname);
+    toast('Excel file downloaded');
+  } catch(e) { toast('Excel error: ' + e.message); }
+};
+
+// ─── ADMIN FUNCTIONS ──────────────────────────────────────────────────────────
+function loadAdminData() {
+  // Real-time listener for pending count on the tab
+  const usersRef = ref(db, 'users');
+  const unsub = onValue(usersRef, snap => {
+    const users = snap.val() || {};
+    const n = Object.values(users).filter(u => u.role === 'lecturer' && u.status === 'pending').length;
+    const badge = document.getElementById('adm-pending-count');
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'inline-block' : 'none';
+  });
+  unsubListeners.push(unsub);
+  loadPendingLecturers();
+}
+
+window.switchAdminTab = function(t) {
+  ['pending','lecturers','sessions'].forEach(tab => {
+    document.getElementById('adm-tab-' + tab).classList.toggle('active', t === tab);
+    document.getElementById('adm-' + tab + '-content').style.display = t === tab ? 'block' : 'none';
+  });
+  if (t === 'pending') loadPendingLecturers();
+  if (t === 'lecturers') loadApprovedLecturers();
+  if (t === 'sessions') loadLiveSessions();
+};
+
+async function loadPendingLecturers() {
+  const listEl = document.getElementById('adm-pending-list');
+  const emptyEl = document.getElementById('adm-pending-empty');
+  listEl.innerHTML = '';
+  try {
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val() || {};
+    const pending = Object.entries(users).filter(([uid,u]) => u.role === 'lecturer' && u.status === 'pending');
+    if (pending.length === 0) { emptyEl.style.display = 'block'; return; }
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = pending.map(([uid, u]) => `
+      <div class="pending-item">
+        <div class="pending-name">${u.name}</div>
+        <div class="pending-email">${u.email} · Registered ${new Date(u.registeredAt).toLocaleDateString('en-GB')}</div>
+        <div class="pending-actions">
+          <button class="btn btn-green btn-sm" style="flex:1" onclick="approveLecturer('${uid}')">✓ Approve</button>
+          <button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectLecturer('${uid}')">✗ Reject</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { listEl.innerHTML = '<div class="empty-state">Error loading pending list.</div>'; }
+}
+
+window.approveLecturer = async function(uid) {
+  try {
+    await update(ref(db, 'users/' + uid), { status: 'approved' });
+    toast('Lecturer approved successfully.');
+    loadPendingLecturers();
+  } catch(e) { toast('Error approving lecturer.'); }
+};
+window.rejectLecturer = async function(uid) {
+  if (!confirm('Reject and block this lecturer account?')) return;
+  try {
+    await update(ref(db, 'users/' + uid), { status: 'rejected' });
+    toast('Lecturer rejected.');
+    loadPendingLecturers();
+  } catch(e) { toast('Error rejecting lecturer.'); }
+};
+
+async function loadApprovedLecturers() {
+  const listEl = document.getElementById('adm-lecturers-list');
+  const emptyEl = document.getElementById('adm-lecturers-empty');
+  listEl.innerHTML = '';
+  try {
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val() || {};
+    const approved = Object.entries(users).filter(([uid,u]) => u.role === 'lecturer' && u.status === 'approved');
+    if (approved.length === 0) { emptyEl.style.display = 'block'; return; }
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = approved.map(([uid, u]) => `
+      <div class="pending-item">
+        <div class="pending-name">${u.name}</div>
+        <div class="pending-email">${u.email}</div>
+        <div style="font-size:12px;color:var(--green)">✓ Approved</div>
+      </div>
+    `).join('');
+  } catch(e) { }
+}
+
+function loadLiveSessions() {
+  const listEl = document.getElementById('adm-sessions-list');
+  const emptyEl = document.getElementById('adm-sessions-empty');
+  // Remove old session listeners before adding new one
+  const sessRef = ref(db, 'activeSessions');
+  const unsub = onValue(sessRef, snap => {
+    const sessions = snap.val() || {};
+    const active = Object.entries(sessions).filter(([k,v]) => v && v.active);
+    if (active.length === 0) {
+      emptyEl.style.display = 'block'; listEl.innerHTML = '';
+    } else {
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = active.map(([lecId, sess]) => {
+        const studs = Object.values(sess.students || {});
+        const present = studs.filter(s => s.status !== 'late').length;
+        const late = studs.filter(s => s.status === 'late').length;
+        const d = new Date(sess.openedAt);
+        return `<div class="pending-item">
+          <div style="margin-bottom:6px"><span class="live-badge"><span class="live-dot"></span> Live</span></div>
+          <div class="pending-name">${sess.course}</div>
+          <div class="pending-email">${sess.lecturer} · ${sess.room} · Started ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          <div style="font-size:13px;color:var(--text2)">${present} present · ${late} late</div>
+        </div>`;
+      }).join('');
+    }
+  });
+  unsubListeners.push(unsub);
+}
+</script>
+</body>
+</html>
