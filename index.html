@@ -512,13 +512,13 @@ import { getDatabase, ref, set, get, push, onValue, remove, update } from "https
 // In your Firebase console, make sure to enable "Email/Password" sign-in under
 // Authentication → Sign-in method.
 const firebaseConfig = {
-  apiKey: "AIzaSyB2D5CH0c38bOUHUcSlwea2-k64bxE5keY",
-  authDomain: "attendance-system-demo-dbaf0.firebaseapp.com",
-  databaseURL: "https://attendance-system-demo-dbaf0-default-rtdb.firebaseio.com",
-  projectId: "attendance-system-demo-dbaf0",
-  storageBucket: "attendance-system-demo-dbaf0.firebasestorage.app",
-  messagingSenderId: "102587666436",
-  appId: "1:102587666436:web:0f85dd9a54ec742e762551"
+  apiKey: "AIzaSyB2LpYpv1nQ6K9hDa2lccwcO1G7NnwsUy0",
+  authDomain: "attendance-syste-485a6.firebaseapp.com",
+  projectId: "attendance-syste-485a6",
+  storageBucket: "attendance-syste-485a6.firebasestorage.app",
+  messagingSenderId: "581607464583",
+  appId: "1:581607464583:web:4e74d00f2a1bcc72bd2222",
+  measurementId: "G-V4YK6M7MGK"
 };
 
 /*
@@ -563,9 +563,9 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const ADMIN_EMAILS = ['alajogunayomiposi@gmail.com', 'ayomiposialajogun@gmail.com'];
-const ADMIN_DOMAIN = 'apexhub.info';
+const ADMIN_EMAILS = ['ayomiposialajogun@gmail.com'];
 const AUTO_LEC_DOMAIN = 'aaua.edu.ng';
+const AUTO_LEC_EMAILS = ['alajogunayomiposi@gmail.com'];
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let dark = false;
@@ -586,7 +586,10 @@ function isAdminEmail(e) {
   const em = e.toLowerCase();
   return ADMIN_EMAILS.includes(em) || em.endsWith('@' + ADMIN_DOMAIN);
 }
-function isAutoLec(e) { return e.toLowerCase().endsWith('@' + AUTO_LEC_DOMAIN); }
+function isAutoLec(e) {
+  const em = e.toLowerCase();
+  return em.endsWith('@' + AUTO_LEC_DOMAIN) || AUTO_LEC_EMAILS.includes(em);
+}
 function matricToEmail(m) { return m.replace(/[^a-z0-9]/gi,'').toLowerCase() + '@stu.attendatrack.app'; }
 function matricToKey(m) { return m.replace(/[^a-z0-9]/gi,'_').toLowerCase(); }
 function genPin() { return String(Math.floor(1000 + Math.random() * 9000)); }
