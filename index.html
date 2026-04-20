@@ -88,11 +88,11 @@ select.input-field{cursor:pointer}
 .success-sub{font-size:13px;color:var(--text2)}
 .warn-box{background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:12px;padding:24px 20px;text-align:center;margin-bottom:16px}
 
-/* STATS */
-.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat-card{background:var(--bg2);border-radius:8px;padding:12px 14px;text-align:center}
-.stat-num{font-size:26px;font-family:var(--font);color:var(--text);margin-bottom:2px}
-.stat-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+/* STATS — 4-column grid */
+.stat-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-card{background:var(--bg2);border-radius:8px;padding:10px 8px;text-align:center}
+.stat-num{font-size:20px;font-family:var(--font);color:var(--text);margin-bottom:2px}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
 
 /* STUDENT LIST */
 .student-list{border:1px solid var(--border);border-radius:8px;overflow:hidden}
@@ -124,10 +124,10 @@ select.input-field{cursor:pointer}
 .qr-token-text{font-family:var(--font);font-size:20px;letter-spacing:4px;color:var(--accent);margin:4px 0}
 .qr-countdown{font-size:11px;color:var(--text3);margin-top:4px}
 
-/* BADGE (for count on tab) */
+/* BADGE */
 .count-badge{display:inline-block;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;vertical-align:middle;line-height:1.5}
 
-/* AUTH page specific */
+/* AUTH */
 .auth-hint{font-size:12px;color:var(--text3);line-height:1.6;padding:12px 14px;background:var(--bg2);border-radius:8px;margin-bottom:14px;border-left:3px solid var(--accent)}
 
 /* Status badges */
@@ -158,6 +158,18 @@ select.input-field{cursor:pointer}
 .rec-course{font-family:var(--font);font-size:16px;color:var(--text);margin-bottom:3px}
 .rec-meta{font-size:12px;color:var(--text3)}
 .rec-actions{display:flex;gap:8px;margin-top:10px}
+
+/* Progress bar */
+.progress-wrap{margin-bottom:16px}
+.progress-header{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.progress-track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;width:0%;background:var(--green);border-radius:4px;transition:width .4s ease}
+
+/* Search row */
+.search-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.search-row .section-label{margin-bottom:0;flex-shrink:0}
+.search-input{padding:7px 10px;font-size:13px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-family:var(--font2);outline:none;transition:border-color .15s;-webkit-appearance:none;width:180px}
+.search-input:focus{border-color:var(--accent)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -307,13 +319,11 @@ select.input-field{cursor:pointer}
 
     <!-- MARK ATTENDANCE CONTENT -->
     <div id="stu-mark-content">
-      <!-- Step 1: find sessions -->
       <div id="stu-find-form">
         <button class="btn btn-primary" id="find-sessions-btn" onclick="loadActiveSessions()">Find Active Sessions</button>
         <div id="stu-sessions-list" style="margin-top:14px"></div>
       </div>
 
-      <!-- Step 2: verify -->
       <div id="stu-verify-form" style="display:none">
         <div class="session-banner">
           <div class="s-title" id="stu-course-name"></div>
@@ -335,7 +345,6 @@ select.input-field{cursor:pointer}
         <button class="btn btn-secondary" onclick="cancelStudentVerify()">Cancel</button>
       </div>
 
-      <!-- Step 3: success -->
       <div id="stu-success" style="display:none">
         <div class="success-box">
           <span class="success-check">✓</span>
@@ -401,6 +410,10 @@ select.input-field{cursor:pointer}
             <option value="20">20 minutes</option>
           </select>
         </div>
+        <div class="input-group">
+          <label class="input-label">Expected Students <span style="color:var(--text3);font-weight:normal">(optional — enables progress bar)</span></label>
+          <input class="input-field" id="lec-expected" type="number" min="1" max="1000" placeholder="e.g. 120">
+        </div>
         <button class="btn btn-primary" id="open-btn" onclick="openSession()">Open Attendance Session</button>
       </div>
 
@@ -429,6 +442,7 @@ select.input-field{cursor:pointer}
           <div class="qr-countdown" id="lec-qr-countdown">Refreshes in 60s</div>
         </div>
 
+        <!-- 4-stat row -->
         <div class="stat-row">
           <div class="stat-card">
             <div class="stat-num" id="stat-present">0</div>
@@ -438,12 +452,44 @@ select.input-field{cursor:pointer}
             <div class="stat-num" id="stat-late">0</div>
             <div class="stat-label">Late</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-total">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-expected">—</div>
+            <div class="stat-label">Expected</div>
+          </div>
         </div>
 
-        <div class="section-label">Students in attendance</div>
+        <!-- Progress bar (only visible when expectedCount > 0) -->
+        <div class="progress-wrap" id="lec-progress-wrap" style="display:none">
+          <div class="progress-header">
+            <span>Attendance Progress</span>
+            <span id="lec-progress-pct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-bar" id="lec-progress-bar"></div>
+          </div>
+        </div>
+
+        <!-- Search + list header -->
+        <div class="search-row">
+          <div class="section-label">Students in attendance</div>
+          <input
+            class="search-input"
+            id="lec-student-search"
+            placeholder="Search name or matric…"
+            oninput="filterLiveStudents()"
+          >
+        </div>
         <div class="empty-state" id="lec-empty">
           <span class="empty-icon">📋</span>
           Waiting for students to mark attendance...
+        </div>
+        <div class="empty-state" id="lec-search-empty" style="display:none">
+          <span class="empty-icon">🔍</span>
+          No students match your search.
         </div>
         <div class="student-list" id="lec-student-list" style="display:none"></div>
 
@@ -473,6 +519,7 @@ select.input-field{cursor:pointer}
       <div class="tab" id="adm-tab-sessions" onclick="switchAdminTab('sessions')">Live Sessions</div>
     </div>
 
+    <!-- PENDING -->
     <div id="adm-pending-content">
       <div class="empty-state" id="adm-pending-empty">
         <span class="empty-icon">✅</span>
@@ -481,7 +528,15 @@ select.input-field{cursor:pointer}
       <div id="adm-pending-list"></div>
     </div>
 
+    <!-- LECTURERS — with search -->
     <div id="adm-lecturers-content" style="display:none">
+      <input
+        class="input-field"
+        id="adm-lecturer-search"
+        placeholder="Search by name or email…"
+        oninput="filterLecturers()"
+        style="margin-bottom:12px"
+      >
       <div class="empty-state" id="adm-lecturers-empty">
         <span class="empty-icon">👤</span>
         No approved lecturers yet.
@@ -489,6 +544,7 @@ select.input-field{cursor:pointer}
       <div id="adm-lecturers-list"></div>
     </div>
 
+    <!-- LIVE SESSIONS -->
     <div id="adm-sessions-content" style="display:none">
       <div class="empty-state" id="adm-sessions-empty">
         <span class="empty-icon">📡</span>
@@ -508,9 +564,6 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, on
 import { getDatabase, ref, set, get, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
-// NOTE TO USER: Replace this config if you're using a different Firebase project.
-// In your Firebase console, make sure to enable "Email/Password" sign-in under
-// Authentication → Sign-in method.
 const firebaseConfig = {
   apiKey: "AIzaSyB2LpYpv1nQ6K9hDa2lccwcO1G7NnwsUy0",
   authDomain: "attendance-syste-485a6.firebaseapp.com",
@@ -522,21 +575,22 @@ const firebaseConfig = {
 };
 
 /*
-─── FIREBASE DATABASE RULES ────────────────────────────────────────────────────
-Paste these rules into Firebase Console → Realtime Database → Rules:
+─── UPDATED FIREBASE DATABASE RULES ────────────────────────────────────────────
+Paste these into Firebase Console → Realtime Database → Rules:
 
 {
   "rules": {
     "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".write": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
     },
     "activeSessions": {
       ".read": "auth != null",
       "$lecturerId": {
-        ".write": "auth != null && auth.uid === $lecturerId",
+        ".write": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         "students": {
           "$matricKey": {
             ".write": "auth != null && !data.exists()"
@@ -547,14 +601,11 @@ Paste these rules into Firebase Console → Realtime Database → Rules:
     "sessionHistory": {
       "$lecturerId": {
         ".read": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')",
-        ".write": "auth != null && auth.uid === $lecturerId"
+        ".write": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
     }
   }
 }
-
-The !data.exists() rule on students/$matricKey prevents any student from
-submitting twice for the same session, enforced at the database level.
 ─────────────────────────────────────────────────────────────────────────────────
 */
 
@@ -579,7 +630,9 @@ let qrTimeLeft = 60;
 let unsubListeners = [];
 let loginType = 'student';
 let regType = 'student';
-let selectedLecId = null;   // for student: which session they're joining
+let selectedLecId = null;
+let allStudentsCache = [];
+let allLecturersCache = [];
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 function isAdminEmail(e) {
@@ -602,7 +655,6 @@ function deviceFp() {
   try { return btoa((navigator.userAgent + '|' + screen.width + 'x' + screen.height).substring(0,120)); }
   catch(e) { return 'unknown'; }
 }
-
 function toast(msg, ms = 2600) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -647,12 +699,13 @@ function routeUser() {
       document.getElementById('pending-email').textContent = currentUser.email;
       showPage('pending');
     } else if (d.status === 'rejected') {
-      toast('Your account was rejected. Contact the admin.', 4000);
+      toast('Your account was not approved. Contact the departmental administrator.', 4000);
       signOut(auth);
     } else {
       document.getElementById('lec-greeting').textContent = 'Hello, ' + d.name;
       showPage('lecturer');
       loadLecturerRecords();
+      resumeSessionIfActive();
     }
   } else if (d.role === 'student') {
     document.getElementById('stu-greeting').textContent = 'Hello, ' + d.name;
@@ -661,17 +714,54 @@ function routeUser() {
   }
 }
 
+// ─── SESSION RESUME (fix: session lost after logout) ──────────────────────────
+async function resumeSessionIfActive() {
+  try {
+    const snap = await get(ref(db, 'activeSessions/' + currentUser.uid));
+    const sess = snap.val();
+    if (!sess || !sess.active) return;
+    // Restore active session UI
+    sessionStart = new Date(sess.openedAt);
+    document.getElementById('lec-setup').style.display = 'none';
+    document.getElementById('lec-active').style.display = 'block';
+    document.getElementById('lec-active-course').textContent = sess.course;
+    document.getElementById('lec-active-meta').textContent =
+      sess.lecturer + ' · ' + sess.room + ' · ' + sess.radius + 'm' +
+      (sess.lateWindowMinutes > 0 ? ' · ' + sess.lateWindowMinutes + 'min late window' : '');
+    document.getElementById('lec-pin-display').textContent = sess.pin;
+    generateQr(sess.qrToken);
+    document.getElementById('lec-qr-token-text').textContent = sess.qrToken;
+    // Restore expected count stat
+    const expEl = document.getElementById('stat-expected');
+    if (sess.expectedCount > 0) {
+      expEl.textContent = sess.expectedCount;
+    }
+    const searchEl = document.getElementById('lec-student-search');
+    if (searchEl) searchEl.value = '';
+    timerInterval = setInterval(updateTimer, 1000);
+    startQrRotation();
+    listenToStudents();
+    toast('Session resumed: ' + sess.course);
+  } catch(e) {
+    // No active session — proceed normally
+  }
+}
+
 window.doLogout = async function() {
   clearListeners();
   clearTimers();
   await signOut(auth);
   currentUser = null; currentUserData = null;
+  allStudentsCache = [];
+  allLecturersCache = [];
   // Reset UI
   document.getElementById('stu-find-form').style.display = 'block';
   document.getElementById('stu-verify-form').style.display = 'none';
   document.getElementById('stu-success').style.display = 'none';
   document.getElementById('lec-setup').style.display = 'block';
   document.getElementById('lec-active').style.display = 'none';
+  const searchEl = document.getElementById('lec-student-search');
+  if (searchEl) searchEl.value = '';
   showPage('auth');
 };
 
@@ -759,7 +849,6 @@ window.handleRegister = async function(type) {
       registeredAt: Date.now()
     });
     toast('Account created!');
-    // onAuthStateChanged fires and routes automatically
   } catch(e) {
     const msg = e.code === 'auth/email-already-in-use'
       ? 'This account already exists. Please sign in.'
@@ -808,7 +897,6 @@ window.selectSession = async function(lecId) {
     const snap = await get(ref(db, 'activeSessions/' + lecId));
     const sess = snap.val();
     if (!sess || !sess.active) { toast('Session is no longer active.'); loadActiveSessions(); return; }
-    // Duplicate check (client side)
     const mk = matricToKey(currentUserData.matric);
     if (sess.students && sess.students[mk]) {
       toast('You have already marked attendance for this session.'); return;
@@ -862,15 +950,12 @@ window.markAttendance = async function() {
     if (qrInput && sess.qrToken && qrInput !== sess.qrToken) {
       toast('Invalid QR token — check the code on your lecturer\'s screen.'); btn.disabled = false; btn.textContent = 'Mark Attendance'; return;
     }
-    // Determine present vs late
     const elapsed = (Date.now() - sess.openedAt) / 60000;
     const lateWin = sess.lateWindowMinutes || 0;
     const status = (lateWin > 0 && elapsed > lateWin) ? 'late' : 'present';
-    // Verification method
     let method = 'geolocation+pin';
     if (qrInput && sess.qrToken && qrInput === sess.qrToken) method = 'geolocation+pin+qr';
     const mk = matricToKey(currentUserData.matric);
-    // set() to fixed key — Firebase rules block duplicate (data.exists())
     await set(ref(db, 'activeSessions/' + selectedLecId + '/students/' + mk), {
       name: currentUserData.name,
       matric: currentUserData.matric,
@@ -915,7 +1000,6 @@ async function loadStudentHistory() {
     const snap = await get(ref(db, 'sessionHistory'));
     const all = snap.val() || {};
     const mk = matricToKey(currentUserData.matric);
-    // Collect per-course stats and records
     const records = [];
     const courseTotal = {}, courseAttended = {};
     Object.values(all).forEach(lecSessions => {
@@ -965,6 +1049,7 @@ window.openSession = async function() {
   const room = document.getElementById('lec-room').value.trim();
   const radius = parseInt(document.getElementById('lec-radius').value);
   const lateWin = parseInt(document.getElementById('lec-late').value);
+  const expected = parseInt(document.getElementById('lec-expected').value) || 0;
   if (!course || !room) { toast('Please fill in course title and venue'); return; }
   const btn = document.getElementById('open-btn');
   btn.disabled = true; btn.textContent = 'Opening...';
@@ -973,7 +1058,7 @@ window.openSession = async function() {
   try {
     await set(ref(db, 'activeSessions/' + currentUser.uid), {
       course, lecturer: currentUserData.name, lecturerId: currentUser.uid,
-      room, radius, lateWindowMinutes: lateWin,
+      room, radius, lateWindowMinutes: lateWin, expectedCount: expected,
       openedAt: Date.now(), active: true,
       pin, qrToken, qrRotatedAt: Date.now(), students: {}
     });
@@ -983,6 +1068,10 @@ window.openSession = async function() {
     document.getElementById('lec-active-course').textContent = course;
     document.getElementById('lec-active-meta').textContent = currentUserData.name + ' · ' + room + ' · ' + radius + 'm' + (lateWin > 0 ? ' · ' + lateWin + 'min late window' : '');
     document.getElementById('lec-pin-display').textContent = pin;
+    document.getElementById('stat-expected').textContent = expected > 0 ? expected : '—';
+    const searchEl = document.getElementById('lec-student-search');
+    if (searchEl) searchEl.value = '';
+    allStudentsCache = [];
     generateQr(qrToken);
     document.getElementById('lec-qr-token-text').textContent = qrToken;
     timerInterval = setInterval(updateTimer, 1000);
@@ -1027,38 +1116,91 @@ function startQrRotation() {
   }, 1000);
 }
 
+// ─── LIVE STUDENT LIST WITH SEARCH + PROGRESS BAR ─────────────────────────────
 function listenToStudents() {
   const studRef = ref(db, 'activeSessions/' + currentUser.uid + '/students');
-  const unsub = onValue(studRef, snap => {
+  const unsub = onValue(studRef, async snap => {
     const data = snap.val() || {};
-    const students = Object.values(data);
-    const presentCount = students.filter(s => s.status !== 'late').length;
-    const lateCount = students.filter(s => s.status === 'late').length;
+    allStudentsCache = Object.values(data);
+    const presentCount = allStudentsCache.filter(s => s.status !== 'late').length;
+    const lateCount = allStudentsCache.filter(s => s.status === 'late').length;
+    const totalCount = allStudentsCache.length;
+
     document.getElementById('stat-present').textContent = presentCount;
     document.getElementById('stat-late').textContent = lateCount;
-    const empty = document.getElementById('lec-empty');
-    const list = document.getElementById('lec-student-list');
-    if (students.length === 0) {
-      empty.style.display = 'block'; list.style.display = 'none';
-    } else {
-      empty.style.display = 'none'; list.style.display = 'block';
-      list.innerHTML = students.sort((a,b) => a.timestamp - b.timestamp).map(s => {
-        const init = s.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-        const t = new Date(s.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-        const col = s.status === 'late' ? 'var(--amber)' : 'var(--green)';
-        return `<div class="student-item">
-          <div class="student-avatar">${init}</div>
-          <div style="flex:1">
-            <div class="student-name">${s.name}</div>
-            <div class="student-meta">${s.matric} · ${t} · <span style="color:${col}">${s.status || 'present'}</span></div>
-          </div>
-          <span class="present-dot" style="background:${col}"></span>
-        </div>`;
-      }).join('');
-    }
+    document.getElementById('stat-total').textContent = totalCount;
+
+    // Progress bar
+    try {
+      const sesSnap = await get(ref(db, 'activeSessions/' + currentUser.uid));
+      const sess = sesSnap.val();
+      const expected = sess && sess.expectedCount > 0 ? sess.expectedCount : 0;
+      const progressWrap = document.getElementById('lec-progress-wrap');
+      if (expected > 0) {
+        document.getElementById('stat-expected').textContent = expected;
+        const pct = Math.min(100, Math.round((totalCount / expected) * 100));
+        document.getElementById('lec-progress-pct').textContent = pct + '%';
+        const bar = document.getElementById('lec-progress-bar');
+        bar.style.width = pct + '%';
+        bar.style.background = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--amber)' : 'var(--red)';
+        progressWrap.style.display = 'block';
+      } else {
+        progressWrap.style.display = 'none';
+      }
+    } catch(e) {}
+
+    renderLiveStudentList(allStudentsCache);
   });
   unsubListeners.push(unsub);
 }
+
+function renderLiveStudentList(students) {
+  const searchVal = (document.getElementById('lec-student-search')?.value || '').toLowerCase();
+  const filtered = searchVal
+    ? students.filter(s =>
+        s.name.toLowerCase().includes(searchVal) ||
+        (s.matric || '').toLowerCase().includes(searchVal)
+      )
+    : students;
+
+  const empty = document.getElementById('lec-empty');
+  const searchEmpty = document.getElementById('lec-search-empty');
+  const list = document.getElementById('lec-student-list');
+
+  if (students.length === 0) {
+    empty.style.display = 'block';
+    searchEmpty.style.display = 'none';
+    list.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  if (filtered.length === 0) {
+    searchEmpty.style.display = 'block';
+    list.style.display = 'none';
+    return;
+  }
+  searchEmpty.style.display = 'none';
+  list.style.display = 'block';
+  list.innerHTML = filtered
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map(s => {
+      const init = s.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      const t = new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const col = s.status === 'late' ? 'var(--amber)' : 'var(--green)';
+      return `<div class="student-item">
+        <div class="student-avatar">${init}</div>
+        <div style="flex:1">
+          <div class="student-name">${s.name}</div>
+          <div class="student-meta">${s.matric} · ${t} · <span style="color:${col}">${s.status || 'present'}</span></div>
+        </div>
+        <span class="present-dot" style="background:${col}"></span>
+      </div>`;
+    }).join('');
+}
+
+window.filterLiveStudents = function() {
+  renderLiveStudentList(allStudentsCache);
+};
 
 function updateTimer() {
   if (!sessionStart) return;
@@ -1089,7 +1231,12 @@ window.closeSession = async function() {
     document.getElementById('open-btn').textContent = 'Open Attendance Session';
     document.getElementById('lec-course').value = '';
     document.getElementById('lec-room').value = '';
+    document.getElementById('lec-expected').value = '';
     document.getElementById('lec-qr-code').innerHTML = '';
+    document.getElementById('lec-progress-wrap').style.display = 'none';
+    const searchEl = document.getElementById('lec-student-search');
+    if (searchEl) searchEl.value = '';
+    allStudentsCache = [];
     sessionStart = null;
     loadLecturerRecords();
   } catch(e) { toast('Error closing session.'); }
@@ -1137,7 +1284,6 @@ window.exportPDF = async function(sessKey) {
     const students = Object.values(sess.students || {});
     const dateStr = new Date(sess.openedAt).toLocaleString('en-GB');
     const dur = Math.floor(((sess.closedAt || Date.now()) - sess.openedAt) / 60000);
-    // Header
     doc.setFontSize(14); doc.setFont(undefined,'bold');
     doc.text('AttendaTrack — Attendance Report', 14, 18);
     doc.setDrawColor(26,58,92); doc.setLineWidth(0.5); doc.line(14, 21, 196, 21);
@@ -1148,7 +1294,6 @@ window.exportPDF = async function(sessKey) {
     doc.text('Date:     ' + dateStr, 14, 50);
     doc.text('Duration: ' + dur + ' minutes', 14, 57);
     doc.text('Total:    ' + students.length + ' student(s) recorded', 14, 64);
-    // Table header
     let y = 76;
     doc.setFont(undefined,'bold'); doc.setFontSize(9);
     doc.text('#', 14, y); doc.text('Name', 22, y); doc.text('Matric No.', 90, y);
@@ -1206,7 +1351,6 @@ window.exportExcel = async function(sessKey) {
 
 // ─── ADMIN FUNCTIONS ──────────────────────────────────────────────────────────
 function loadAdminData() {
-  // Real-time listener for pending count on the tab
   const usersRef = ref(db, 'users');
   const unsub = onValue(usersRef, snap => {
     const users = snap.val() || {};
@@ -1250,8 +1394,9 @@ async function loadPendingLecturers() {
       </div>
     `).join('');
   } catch(e) {
-  emptyEl.style.display = 'none';
-  listEl.innerHTML = '<div class="empty-state">Error loading pending list.</div>';
+    emptyEl.style.display = 'none';
+    listEl.innerHTML = '<div class="empty-state">Error loading pending list.</div>';
+  }
 }
 
 window.approveLecturer = async function(uid) {
@@ -1261,6 +1406,7 @@ window.approveLecturer = async function(uid) {
     loadPendingLecturers();
   } catch(e) { toast('Error approving lecturer.'); }
 };
+
 window.rejectLecturer = async function(uid) {
   if (!confirm('Reject and block this lecturer account?')) return;
   try {
@@ -1270,30 +1416,75 @@ window.rejectLecturer = async function(uid) {
   } catch(e) { toast('Error rejecting lecturer.'); }
 };
 
+// ─── APPROVED LECTURERS WITH SEARCH + REVOKE ──────────────────────────────────
 async function loadApprovedLecturers() {
   const listEl = document.getElementById('adm-lecturers-list');
   const emptyEl = document.getElementById('adm-lecturers-empty');
   listEl.innerHTML = '';
+  const searchEl = document.getElementById('adm-lecturer-search');
+  if (searchEl) searchEl.value = '';
+  allLecturersCache = [];
   try {
     const snap = await get(ref(db, 'users'));
     const users = snap.val() || {};
-    const approved = Object.entries(users).filter(([uid,u]) => u.role === 'lecturer' && u.status === 'approved');
-    if (approved.length === 0) { emptyEl.style.display = 'block'; return; }
+    allLecturersCache = Object.entries(users).filter(([uid, u]) => u.role === 'lecturer' && u.status === 'approved');
+    renderLecturerList();
+  } catch(e) {
     emptyEl.style.display = 'none';
-    listEl.innerHTML = approved.map(([uid, u]) => `
-      <div class="pending-item">
-        <div class="pending-name">${u.name}</div>
-        <div class="pending-email">${u.email}</div>
-        <div style="font-size:12px;color:var(--green)">✓ Approved</div>
-      </div>
-    `).join('');
-  } catch(e) { }
+    listEl.innerHTML = '<div class="empty-state">Error loading lecturers.</div>';
+  }
 }
 
+function renderLecturerList() {
+  const listEl = document.getElementById('adm-lecturers-list');
+  const emptyEl = document.getElementById('adm-lecturers-empty');
+  const searchVal = (document.getElementById('adm-lecturer-search')?.value || '').toLowerCase();
+  const filtered = searchVal
+    ? allLecturersCache.filter(([uid, u]) =>
+        u.name.toLowerCase().includes(searchVal) ||
+        (u.email || '').toLowerCase().includes(searchVal)
+      )
+    : allLecturersCache;
+
+  if (allLecturersCache.length === 0) {
+    emptyEl.style.display = 'block';
+    listEl.innerHTML = '';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="empty-state"><span class="empty-icon">🔍</span>No lecturers match your search.</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(([uid, u]) => `
+    <div class="pending-item">
+      <div class="pending-name">${u.name}</div>
+      <div class="pending-email">${u.email}</div>
+      <div style="font-size:12px;color:var(--green);margin-bottom:8px">✓ Approved</div>
+      <div class="pending-actions">
+        <button class="btn btn-danger btn-sm" style="flex:1" onclick="revokeLecturer('${uid}')">Revoke Access</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.filterLecturers = function() {
+  renderLecturerList();
+};
+
+window.revokeLecturer = async function(uid) {
+  if (!confirm('Revoke this lecturer\'s access? They will be locked out immediately.')) return;
+  try {
+    await update(ref(db, 'users/' + uid), { status: 'rejected' });
+    toast('Lecturer access revoked.');
+    loadApprovedLecturers();
+  } catch(e) { toast('Error revoking access.'); }
+};
+
+// ─── LIVE SESSIONS WITH ADMIN FORCE-CLOSE ─────────────────────────────────────
 function loadLiveSessions() {
   const listEl = document.getElementById('adm-sessions-list');
   const emptyEl = document.getElementById('adm-sessions-empty');
-  // Remove old session listeners before adding new one
   const sessRef = ref(db, 'activeSessions');
   const unsub = onValue(sessRef, snap => {
     const sessions = snap.val() || {};
@@ -1311,13 +1502,33 @@ function loadLiveSessions() {
           <div style="margin-bottom:6px"><span class="live-badge"><span class="live-dot"></span> Live</span></div>
           <div class="pending-name">${sess.course}</div>
           <div class="pending-email">${sess.lecturer} · ${sess.room} · Started ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
-          <div style="font-size:13px;color:var(--text2)">${present} present · ${late} late</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">${present} present · ${late} late · ${studs.length} total</div>
+          <div class="pending-actions">
+            <button class="btn btn-danger btn-sm" style="flex:1" onclick="adminCloseSession('${lecId}')">Force Close Session</button>
+          </div>
         </div>`;
       }).join('');
     }
   });
   unsubListeners.push(unsub);
 }
+
+window.adminCloseSession = async function(lecId) {
+  if (!confirm('Force close this session? It will be saved to the lecturer\'s records.')) return;
+  try {
+    const snap = await get(ref(db, 'activeSessions/' + lecId));
+    const data = snap.val();
+    if (data) {
+      const histKey = 'sess_' + data.openedAt;
+      await set(ref(db, 'sessionHistory/' + lecId + '/' + histKey), {
+        ...data, closedAt: Date.now(), active: false, closedByAdmin: true
+      });
+    }
+    await remove(ref(db, 'activeSessions/' + lecId));
+    toast('Session force-closed and saved to lecturer records.');
+  } catch(e) { toast('Error closing session: ' + e.message); }
+};
+
 </script>
 </body>
 </html>
