@@ -1249,7 +1249,9 @@ async function loadPendingLecturers() {
         </div>
       </div>
     `).join('');
-  } catch(e) { listEl.innerHTML = '<div class="empty-state">Error loading pending list.</div>'; }
+  } catch(e) {
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = '<div class="empty-state">Error loading pending list.</div>';
 }
 
 window.approveLecturer = async function(uid) {
