@@ -603,6 +603,12 @@ Paste these into Firebase Console → Realtime Database → Rules:
         ".read": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         ".write": "auth != null && (auth.uid === $lecturerId || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
+    },
+    "studentHistory": {
+      "$studentUid": {
+        ".read": "auth != null && auth.uid === $studentUid",
+        ".write": "auth != null && (auth.uid === $studentUid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
     }
   }
 }
@@ -957,6 +963,7 @@ window.markAttendance = async function() {
     if (qrInput && sess.qrToken && qrInput === sess.qrToken) method = 'geolocation+pin+qr';
     const mk = matricToKey(currentUserData.matric);
     await set(ref(db, 'activeSessions/' + selectedLecId + '/students/' + mk), {
+      studentUid: currentUser.uid,
       name: currentUserData.name,
       matric: currentUserData.matric,
       timestamp: Date.now(),
@@ -997,29 +1004,29 @@ async function loadStudentHistory() {
   const listEl = document.getElementById('stu-history-list');
   listEl.innerHTML = '<div class="empty-state"><span class="spinner"></span>&nbsp; Loading...</div>';
   try {
-    const snap = await get(ref(db, 'sessionHistory'));
-    const all = snap.val() || {};
-    const mk = matricToKey(currentUserData.matric);
-    const records = [];
-    const courseTotal = {}, courseAttended = {};
-    Object.values(all).forEach(lecSessions => {
-      if (!lecSessions) return;
-      Object.values(lecSessions).forEach(sess => {
-        if (!sess || !sess.course) return;
-        const c = sess.course;
-        if (!courseTotal[c]) { courseTotal[c] = 0; courseAttended[c] = 0; }
-        courseTotal[c]++;
-        const stuRec = sess.students && sess.students[mk];
-        if (stuRec) { courseAttended[c]++; records.push({ ...stuRec, course: c, openedAt: sess.openedAt, lecturer: sess.lecturer }); }
-      });
-    });
-    records.sort((a, b) => b.openedAt - a.openedAt);
+    // Read from studentHistory/{studentUid} — each student sees only their own records
+    const snap = await get(ref(db, 'studentHistory/' + currentUser.uid));
+    const history = snap.val() || {};
+    const records = Object.values(history).sort((a, b) => b.openedAt - a.openedAt);
+
     if (records.length === 0) {
       listEl.innerHTML = '<div class="empty-state"><span class="empty-icon">📋</span>No attendance records yet. Mark your first session!</div>';
       return;
     }
+
+    // Per-course attendance percentage (only counts sessions this student attended)
+    const courseTotal = {};
+    const courseAttended = {};
+    records.forEach(r => {
+      if (!courseTotal[r.course]) { courseTotal[r.course] = 0; courseAttended[r.course] = 0; }
+      courseTotal[r.course]++;
+      courseAttended[r.course]++;
+    });
+
     listEl.innerHTML = records.map(r => {
-      const pct = courseTotal[r.course] ? Math.round((courseAttended[r.course] / courseTotal[r.course]) * 100) : 0;
+      const pct = courseTotal[r.course]
+        ? Math.round((courseAttended[r.course] / courseTotal[r.course]) * 100)
+        : 0;
       const d = new Date(r.openedAt);
       const statusColor = r.status === 'late' ? 'var(--amber)' : 'var(--green)';
       const pctColor = pct < 75 ? 'var(--red)' : pct < 85 ? 'var(--amber)' : 'var(--green)';
@@ -1219,9 +1226,34 @@ window.closeSession = async function() {
     const data = snap.val();
     if (data) {
       const histKey = 'sess_' + data.openedAt;
+      const closedAt = Date.now();
+
+      // Save lecturer copy
       await set(ref(db, 'sessionHistory/' + currentUser.uid + '/' + histKey), {
-        ...data, closedAt: Date.now(), active: false
+        ...data, closedAt, active: false
       });
+
+      // Save each student's own copy under studentHistory/{studentUid}
+      const students = data.students || {};
+      const studentWrites = Object.values(students)
+        .filter(s => s.studentUid)
+        .map(s => set(ref(db, 'studentHistory/' + s.studentUid + '/' + histKey), {
+          sessionId: histKey,
+          course: data.course,
+          lecturer: data.lecturer,
+          lecturerId: currentUser.uid,
+          room: data.room,
+          openedAt: data.openedAt,
+          closedAt,
+          radius: data.radius,
+          lateWindowMinutes: data.lateWindowMinutes || 0,
+          status: s.status || 'present',
+          method: s.method || 'geolocation+pin',
+          timestamp: s.timestamp,
+          matric: s.matric,
+          studentName: s.name
+        }));
+      await Promise.all(studentWrites);
     }
     await remove(ref(db, 'activeSessions/' + currentUser.uid));
     toast('Session closed and saved to records.');
@@ -1520,9 +1552,35 @@ window.adminCloseSession = async function(lecId) {
     const data = snap.val();
     if (data) {
       const histKey = 'sess_' + data.openedAt;
+      const closedAt = Date.now();
+
+      // Save lecturer copy
       await set(ref(db, 'sessionHistory/' + lecId + '/' + histKey), {
-        ...data, closedAt: Date.now(), active: false, closedByAdmin: true
+        ...data, closedAt, active: false, closedByAdmin: true
       });
+
+      // Save each student's own copy under studentHistory/{studentUid}
+      const students = data.students || {};
+      const studentWrites = Object.values(students)
+        .filter(s => s.studentUid)
+        .map(s => set(ref(db, 'studentHistory/' + s.studentUid + '/' + histKey), {
+          sessionId: histKey,
+          course: data.course,
+          lecturer: data.lecturer,
+          lecturerId: lecId,
+          room: data.room,
+          openedAt: data.openedAt,
+          closedAt,
+          radius: data.radius,
+          lateWindowMinutes: data.lateWindowMinutes || 0,
+          status: s.status || 'present',
+          method: s.method || 'geolocation+pin',
+          timestamp: s.timestamp,
+          matric: s.matric,
+          studentName: s.name,
+          closedByAdmin: true
+        }));
+      await Promise.all(studentWrites);
     }
     await remove(ref(db, 'activeSessions/' + lecId));
     toast('Session force-closed and saved to lecturer records.');
